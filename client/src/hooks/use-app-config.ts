@@ -4,7 +4,7 @@ import { initSupabase } from "@/lib/supabase";
 type AppConfig = {
   supabaseUrl: string;
   supabaseAnonKey: string;
-  googleMapsApiKey: string;
+  naverMapsClientId: string;
 };
 
 let supabaseInitialized = false;
@@ -27,7 +27,7 @@ export function useAppConfig() {
     },
   });
 
-  const isReady = isSuccess && supabaseInitialized && !!config?.googleMapsApiKey;
+  const isReady = isSuccess && supabaseInitialized && !!config?.naverMapsClientId;
 
   return { config, isLoading, error, isReady };
 }
