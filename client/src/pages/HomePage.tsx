@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, Component, type ReactNode, type ErrorInfo } from "react";
 import { NavermapsProvider, Container as MapDiv, NaverMap, Marker, useNavermaps } from "react-naver-maps";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase";
@@ -8,8 +8,49 @@ import { getCategoryColor } from "@/components/CategoryMarker";
 import PinDetailPanel from "@/components/PinDetailPanel";
 import Header from "@/components/Header";
 import { useAppConfig } from "@/hooks/use-app-config";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+class MapErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Naver Maps load error:", error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-3 text-center px-6">
+            <AlertTriangle className="w-10 h-10 text-destructive" />
+            <p className="text-sm font-medium text-foreground">지도를 불러올 수 없습니다</p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              {this.state.error.message}
+            </p>
+            <button
+              className="mt-2 text-xs text-primary underline"
+              onClick={() => {
+                this.setState({ error: null });
+                window.location.reload();
+              }}
+            >
+              새로고침
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
 const DEFAULT_ZOOM = 12;
@@ -148,9 +189,11 @@ export default function HomePage() {
       <div className="flex-1 relative mt-14">
         {config?.naverMapsClientId ? (
           <NavermapsProvider ncpClientId={config.naverMapsClientId}>
-            <MapDiv style={{ width: "100%", height: "100%" }}>
-              <MapView />
-            </MapDiv>
+            <MapErrorBoundary>
+              <MapDiv style={{ width: "100%", height: "100%" }}>
+                <MapView />
+              </MapDiv>
+            </MapErrorBoundary>
           </NavermapsProvider>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-background">
