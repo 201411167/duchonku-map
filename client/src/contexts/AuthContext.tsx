@@ -51,14 +51,17 @@ async function upsertUser(user: User): Promise<void> {
   try {
     const { getSupabase } = await import("@/lib/supabase");
     const supabase = getSupabase();
-    await supabase.from("users").upsert({
-      id: user.id,
-      email: user.email,
-      full_name:
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        null,
-    }, { onConflict: "id" });
+    await supabase.from("users").upsert(
+      {
+        id: user.id,
+        email: user.email,
+        full_name:
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          null,
+      },
+      { onConflict: "id" }
+    );
   } catch (e) {
     console.error("Failed to upsert user:", e);
   }
@@ -68,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
   async function processUser(authUser: User | null, sess: Session | null) {
     if (!authUser) {
       setUser(null);
@@ -76,8 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+
+    // Set session immediately so header can start resolving
+    setSession(sess);
+
     await upsertUser(authUser);
     const isAdmin = await fetchIsAdmin(authUser.id);
+
     setUser({
       id: authUser.id,
       email: authUser.email,
@@ -87,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatar_url: authUser.user_metadata?.avatar_url,
       isAdmin,
     });
-    setSession(sess);
     setLoading(false);
   }
 
@@ -98,19 +104,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { getSupabase } = await import("@/lib/supabase");
       const supabase = getSupabase();
 
-      // Handle OAuth hash callback
-      const hash = window.location.hash;
-      if (hash.includes("access_token")) {
+      // Handle OAuth hash fragment — Supabase will parse this automatically
+      // but we clear it from the URL for a clean look
+      if (window.location.hash.includes("access_token")) {
         window.history.replaceState(null, "", window.location.pathname);
       }
 
-      const { data: { session: sess } } = await supabase.auth.getSession();
-      await processUser(sess?.user ?? null, sess);
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-        processUser(s?.user ?? null, s);
-      });
+      // Subscribe to auth changes BEFORE reading the session, so we don't
+      // miss the SIGNED_IN event fired right after an OAuth redirect
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (_event, s) => {
+          processUser(s?.user ?? null, s);
+        }
+      );
       unsubscribe = () => subscription.unsubscribe();
+
+      // Also read the current session in case the user was already logged in
+      const { data: { session: sess } } = await supabase.auth.getSession();
+      if (sess) {
+        await processUser(sess.user, sess);
+      } else {
+        setLoading(false);
+      }
     }
 
     init().catch(err => {
@@ -122,11 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    const { getSupabase } = await import("@/lib/supabase");
-    const supabase = getSupabase();
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    setLoading(true);
+    try {
+      const { getSupabase } = await import("@/lib/supabase");
+      const supabase = getSupabase();
+      await supabase.auth.signOut();
+    } finally {
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+    }
   };
 
   return (

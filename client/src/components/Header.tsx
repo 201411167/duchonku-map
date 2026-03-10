@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,13 +14,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Header() {
-  const { user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [, navigate] = useLocation();
 
   const initials = user?.full_name
     ? user.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() ?? "U";
+    : user?.email?.[0]?.toUpperCase() ?? "?";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 md:px-6 border-b border-border/60 backdrop-blur-md bg-background/80">
@@ -33,7 +34,8 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        {user?.isAdmin && (
+        {/* Admin shortcut button — only when confirmed logged-in admin */}
+        {!loading && user?.isAdmin && (
           <Button
             variant="ghost"
             size="sm"
@@ -60,27 +62,34 @@ export default function Header() {
           )}
         </Button>
 
-        {user ? (
+        {/* Auth area: skeleton while loading, avatar if logged in, button if not */}
+        {loading ? (
+          <Skeleton className="w-8 h-8 rounded-full" />
+        ) : user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 data-testid="button-user-menu"
-                className="flex items-center gap-2 rounded-full hover:opacity-80 transition-opacity focus:outline-none"
+                className="flex items-center rounded-full hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user.avatar_url} />
-                  <AvatarFallback className="text-xs bg-primary text-primary-foreground font-medium">
+                  <AvatarImage src={user.avatar_url} alt={user.full_name ?? user.email} />
+                  <AvatarFallback className="text-xs bg-primary text-primary-foreground font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <div className="px-2 py-1.5">
-                <p className="text-sm font-medium truncate">{user.full_name || "사용자"}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            <DropdownMenuContent align="end" className="w-52">
+              <div className="px-3 py-2">
+                <p className="text-sm font-semibold truncate" data-testid="text-username">
+                  {user.full_name || "사용자"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate" data-testid="text-useremail">
+                  {user.email}
+                </p>
                 {user.isAdmin && (
-                  <span className="inline-block mt-1 text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                  <span className="inline-block mt-1.5 text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                     어드민
                   </span>
                 )}
@@ -90,18 +99,18 @@ export default function Header() {
                 <DropdownMenuItem
                   data-testid="menu-item-admin"
                   onClick={() => navigate("/admin")}
-                  className="cursor-pointer"
+                  className="cursor-pointer gap-2"
                 >
-                  <Settings className="w-3.5 h-3.5 mr-2" />
+                  <Settings className="w-3.5 h-3.5" />
                   Pin 관리
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
                 data-testid="menu-item-signout"
                 onClick={signOut}
-                className="cursor-pointer text-destructive focus:text-destructive"
+                className="cursor-pointer gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
               >
-                <LogOut className="w-3.5 h-3.5 mr-2" />
+                <LogOut className="w-3.5 h-3.5" />
                 로그아웃
               </DropdownMenuItem>
             </DropdownMenuContent>
