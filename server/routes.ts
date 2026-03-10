@@ -1,16 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
-
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.get("/api/config", (_req, res) => {
+    res.json({
+      supabaseUrl: process.env.VITE_SUPABASE_URL || "https://jhuvztomhjeebqygxddq.supabase.co",
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || "",
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+    });
+  });
 
   return httpServer;
 }
