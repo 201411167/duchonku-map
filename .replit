@@ -43,3 +43,4 @@ waitForPort = 5000
 
 [userenv.shared]
 VITE_SUPABASE_URL = "https://jhuvztomhjeebqygxddq.supabase.co"
+NAVER_MAPS_CLIENT_ID = "4s0xqhzbzo"

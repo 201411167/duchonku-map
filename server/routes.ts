@@ -10,6 +10,7 @@ export async function registerRoutes(
       supabaseUrl: process.env.VITE_SUPABASE_URL || "https://jhuvztomhjeebqygxddq.supabase.co",
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || "",
       googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+      naverMapsClientId: process.env.NAVER_MAPS_CLIENT_ID || "",
     });
   });
 
