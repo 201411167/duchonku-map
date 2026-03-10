@@ -104,17 +104,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { getSupabase } = await import("@/lib/supabase");
       const supabase = getSupabase();
 
-      // Handle OAuth hash fragment — Supabase will parse this automatically
-      // but we clear it from the URL for a clean look
-      if (window.location.hash.includes("access_token")) {
-        window.history.replaceState(null, "", window.location.pathname);
-      }
+      const hasOAuthHash = window.location.hash.includes("access_token");
 
       // Subscribe to auth changes BEFORE reading the session, so we don't
       // miss the SIGNED_IN event fired right after an OAuth redirect
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (_event, s) => {
           processUser(s?.user ?? null, s);
+          // Clean up the URL hash after Supabase has processed it
+          if (hasOAuthHash && window.location.hash) {
+            window.history.replaceState(null, "", window.location.pathname);
+          }
         }
       );
       unsubscribe = () => subscription.unsubscribe();
@@ -125,6 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await processUser(sess.user, sess);
       } else {
         setLoading(false);
+      }
+
+      // Clean up hash if still present (e.g. session already existed)
+      if (hasOAuthHash) {
+        window.history.replaceState(null, "", window.location.pathname);
       }
     }
 
