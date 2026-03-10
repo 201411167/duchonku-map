@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Container as MapDiv, NaverMap, Marker, useNavermaps } from "react-naver-maps";
+import { useState, useCallback, useRef } from "react";
+import { NavermapsProvider, Container as MapDiv, NaverMap, Marker, useNavermaps } from "react-naver-maps";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSupabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -147,12 +147,11 @@ export default function HomePage() {
       <Header />
       <div className="flex-1 relative mt-14">
         {config?.naverMapsClientId ? (
-          <MapDiv
-            ncpClientId={config.naverMapsClientId}
-            style={{ width: "100%", height: "100%" }}
-          >
-            <MapView />
-          </MapDiv>
+          <NavermapsProvider ncpClientId={config.naverMapsClientId}>
+            <MapDiv style={{ width: "100%", height: "100%" }}>
+              <MapView />
+            </MapDiv>
+          </NavermapsProvider>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-background">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
