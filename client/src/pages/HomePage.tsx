@@ -188,7 +188,7 @@ export default function HomePage() {
       <Header />
       <div className="flex-1 relative mt-14">
         {config?.naverMapsClientId ? (
-          <NavermapsProvider ncpClientId={config.naverMapsClientId}>
+          <NavermapsProvider ncpKeyId={config.naverMapsClientId}>
             <MapErrorBoundary>
               <MapDiv style={{ width: "100%", height: "100%" }}>
                 <MapView />
